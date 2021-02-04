@@ -3,12 +3,14 @@
 #include <string.h>
 #include "curl/curl.h"
 
-struct string {
+typedef struct {
   char *ptr;
   size_t len;
-};
+} string;
 
-void init_string(struct string *s) {
+typedef char URL[256];
+
+void init_string(string *s) {
   s->len = 0;
   s->ptr = malloc(s->len+1);
   if (s->ptr == NULL) {
@@ -18,17 +20,17 @@ void init_string(struct string *s) {
   s->ptr[0] = '\0';
 }
 
-size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s)
+size_t writefunc(void *ptr, size_t size, size_t nmemb, string *data)
 {
-  size_t new_len = s->len + size*nmemb;
-  s->ptr = realloc(s->ptr, new_len+1);
-  if (s->ptr == NULL) {
+  size_t new_len = data->len + size*nmemb;
+  data->ptr = realloc(data->ptr, new_len+1);
+  if (data->ptr == NULL) {
     fprintf(stderr, "realloc() failed\n");
     exit(EXIT_FAILURE);
   }
-  memcpy(s->ptr+s->len, ptr, size*nmemb);
-  s->ptr[new_len] = '\0';
-  s->len = new_len;
+  memcpy(data->ptr + data->len, ptr, size*nmemb);
+  data->ptr[new_len] = '\0';
+  data->len = new_len;
 
   return size*nmemb;
 }
@@ -42,10 +44,18 @@ void delchar(char *str, int num_delete)
     }
 }
 
+void getQuote(CURL *curl, CURLcode res, URL *url, string *data) {
+    curl_easy_setopt(curl, CURLOPT_URL, *url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, data);
+    res = curl_easy_perform(curl);
+}
+
 int main(int argc, char *argv[]) {
     CURL *curl = curl_easy_init();
     CURLcode res;
-    char URL[256] = "https://finnhub.io/api/v1/quote?symbol=";
+    string data;
+    URL base_url = "https://finnhub.io/api/v1/";
     char *API = getenv("FINNHUB_API_KEY");
     int API_size = strlen(API);
     char *curr, *high, *low;
@@ -59,26 +69,22 @@ int main(int argc, char *argv[]) {
         printf("Set your FINNHUB_API_KEY env var");
         return EXIT_FAILURE;
     }
-    
 
     if (!curl) {
         fprintf(stderr, "init failed\n");
         return EXIT_FAILURE;
     }
 
+    init_string(&data);
 
-    struct string s;
-    init_string(&s);
-    strncat(URL, symbol, 10);
-    strncat(URL, "&token=", 8);
-    strncat(URL, API, API_size);
+    strncat(base_url, "quote?symbol=", 14);
+    strncat(base_url, symbol, 10);
+    strncat(base_url, "&token=", 8);
+    strncat(base_url, API, API_size);
 
-    curl_easy_setopt(curl, CURLOPT_URL, URL);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
-    res = curl_easy_perform(curl);
+    getQuote(curl, res, &base_url, &data);
 
-    memcpy(copy, s.ptr, s.len);
+    memcpy(copy, data.ptr, data.len);
     curr = strtok(copy, ",");
     high = strtok(NULL, ",");
     low = strtok(NULL, ",");
@@ -89,12 +95,13 @@ int main(int argc, char *argv[]) {
 
     printf("-------------\n");
     printf("Quote for %s\n", symbol);
-    printf("Current price: $%s\n", curr);
-    printf("Daily High: $%s\n", high);
-    printf("Daily Low: $%s\n", low);
+    printf("Current price:\t$%s\n", curr);
+    printf("Daily High:\t$%s\n", high);
+    printf("Daily Low:\t$%s\n", low);
     printf("-------------\n");
 
-    free(s.ptr);
+    free(data.ptr);
+    data.ptr = NULL;
 
     curl_easy_cleanup(curl);
 
