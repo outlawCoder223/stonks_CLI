@@ -4,7 +4,7 @@
 
 With all the recent buzz on the stock market, I was getting tired of constantly checking specific stocks online. This inspired me to create this little commandline tool to get stock quotes instantly. All you need is an API key to the [Finnhub](https://finnhub.io/) financial API and you are on your way! I set the executable in the `PATH` environment variable so that wherever I am I can type `stonks <ticker>` and get a real time quote for where the price is at. Feel free to take this and make it your own!
 
-[](./stonks_CLI.gif)
+![](./stonks_CLI.gif)
 
 ## Installation
 
