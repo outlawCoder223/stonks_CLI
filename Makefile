@@ -1,2 +1,4 @@
+CC=gcc
+
 stocks: main.c
-	gcc -o stonks main.c -lcurl
+	$(CC) -o stonks main.c -lcurl
