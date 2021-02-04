@@ -6,11 +6,11 @@
 typedef struct {
   char *ptr;
   size_t len;
-} string;
+} CURLdata;
 
 typedef char URL[256];
 
-void init_string(string *s) {
+void init_CURLdata(CURLdata *s) {
   s->len = 0;
   s->ptr = malloc(s->len+1);
   if (s->ptr == NULL) {
@@ -20,7 +20,7 @@ void init_string(string *s) {
   s->ptr[0] = '\0';
 }
 
-size_t writefunc(void *ptr, size_t size, size_t nmemb, string *data)
+size_t writefunc(void *ptr, size_t size, size_t nmemb, CURLdata *data)
 {
   size_t new_len = data->len + size*nmemb;
   data->ptr = realloc(data->ptr, new_len+1);
@@ -44,7 +44,14 @@ void delchar(char *str, int num_delete)
     }
 }
 
-void getQuote(CURL *curl, CURLcode res, URL *url, string *data) {
+void buildURL(URL *base_url, char *symbol, char *API, int API_len) {
+    strncat(*base_url, "quote?symbol=", 14);
+    strncat(*base_url, symbol, 10);
+    strncat(*base_url, "&token=", 8);
+    strncat(*base_url, API, API_len);
+}
+
+void getQuote(CURL *curl, CURLcode res, URL *url, CURLdata *data) {
     curl_easy_setopt(curl, CURLOPT_URL, *url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, data);
@@ -54,10 +61,10 @@ void getQuote(CURL *curl, CURLcode res, URL *url, string *data) {
 int main(int argc, char *argv[]) {
     CURL *curl = curl_easy_init();
     CURLcode res;
-    string data;
+    CURLdata data;
     URL base_url = "https://finnhub.io/api/v1/";
     char *API = getenv("FINNHUB_API_KEY");
-    int API_size = strlen(API);
+    int API_len = strlen(API);
     char *curr, *high, *low;
     char *symbol = argv[1];
     char copy[256];
@@ -75,13 +82,9 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    init_string(&data);
+    init_CURLdata(&data);
 
-    strncat(base_url, "quote?symbol=", 14);
-    strncat(base_url, symbol, 10);
-    strncat(base_url, "&token=", 8);
-    strncat(base_url, API, API_size);
-
+    buildURL(&base_url, symbol, API, API_len);
     getQuote(curl, res, &base_url, &data);
 
     memcpy(copy, data.ptr, data.len);
