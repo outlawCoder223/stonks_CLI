@@ -52,11 +52,10 @@ int main(int argc, char *argv[]) {
     char *symbol = argv[1];
     char copy[256];
 
-    if(argc < 2) {
+    if (argc < 2) {
         printf("I need a stock symbol\n");
         return EXIT_FAILURE;
-    } else if (!API)
-    {
+    } else if (!API) {
         printf("Set your FINNHUB_API_KEY env var");
         return EXIT_FAILURE;
     }
@@ -73,7 +72,7 @@ int main(int argc, char *argv[]) {
     strncat(URL, symbol, 10);
     strncat(URL, "&token=", 8);
     strncat(URL, API, API_size);
-    printf("%s\n", URL);
+
     curl_easy_setopt(curl, CURLOPT_URL, URL);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
@@ -98,6 +97,6 @@ int main(int argc, char *argv[]) {
     free(s.ptr);
 
     curl_easy_cleanup(curl);
-    printf("\n");
+
     return EXIT_SUCCESS;
 }
