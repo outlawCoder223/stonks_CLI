@@ -8,6 +8,12 @@ typedef struct {
   size_t len;
 } CURLdata;
 
+typedef struct {
+    char *curr;
+    char *high;
+    char *low;
+} QUOTE;
+
 typedef char URL[256];
 
 void init_CURLdata(CURLdata *s) {
@@ -58,26 +64,34 @@ void getQuote(CURL *curl, CURLcode res, URL *url, CURLdata *data) {
     res = curl_easy_perform(curl);
 }
 
+void parseQuote(QUOTE *quote, CURLdata *data) {
+    quote->curr = strtok(data->ptr, ",");
+    quote->high = strtok(NULL, ",");
+    quote->low = strtok(NULL, ",");
+
+    delchar(quote->curr, 5);
+    delchar(quote->high, 4);
+    delchar(quote->low, 4);
+
+}
+
 int main(int argc, char *argv[]) {
     CURL *curl = curl_easy_init();
     CURLcode res;
     CURLdata data;
+    QUOTE quote;
     URL base_url = "https://finnhub.io/api/v1/";
     char *API = getenv("FINNHUB_API_KEY");
     int API_len = strlen(API);
-    char *curr, *high, *low;
     char *symbol = argv[1];
-    char copy[256];
 
     if (argc < 2) {
-        printf("I need a stock symbol\n");
+        fprintf(stderr, "I need a stock symbol\n");
         return EXIT_FAILURE;
     } else if (!API) {
-        printf("Set your FINNHUB_API_KEY env var");
+        fprintf(stderr, "Set your FINNHUB_API_KEY env var");
         return EXIT_FAILURE;
-    }
-
-    if (!curl) {
+    } else if (!curl) {
         fprintf(stderr, "init failed\n");
         return EXIT_FAILURE;
     }
@@ -86,25 +100,16 @@ int main(int argc, char *argv[]) {
 
     buildURL(&base_url, symbol, API, API_len);
     getQuote(curl, res, &base_url, &data);
-
-    memcpy(copy, data.ptr, data.len);
-    curr = strtok(copy, ",");
-    high = strtok(NULL, ",");
-    low = strtok(NULL, ",");
-
-    delchar(curr, 5);
-    delchar(high, 4);
-    delchar(low, 4);
+    parseQuote(&quote, &data);
 
     printf("-------------\n");
     printf("Quote for %s\n", symbol);
-    printf("Current price:\t$%s\n", curr);
-    printf("Daily High:\t$%s\n", high);
-    printf("Daily Low:\t$%s\n", low);
+    printf("Current price:\t$%s\n", quote.curr);
+    printf("Daily High:\t$%s\n", quote.high);
+    printf("Daily Low:\t$%s\n", quote.low);
     printf("-------------\n");
 
     free(data.ptr);
-    data.ptr = NULL;
 
     curl_easy_cleanup(curl);
 
