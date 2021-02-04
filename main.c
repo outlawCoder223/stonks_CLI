@@ -16,6 +16,7 @@ typedef struct {
 
 typedef char URL[256];
 
+/* initialize the struct needed to receive the GET request */
 void init_CURLdata(CURLdata *s) {
   s->len = 0;
   s->ptr = malloc(s->len+1);
@@ -26,6 +27,7 @@ void init_CURLdata(CURLdata *s) {
   s->ptr[0] = '\0';
 }
 
+/* CURL provides format for write functions in their documentation */
 size_t writefunc(void *ptr, size_t size, size_t nmemb, CURLdata *data)
 {
   size_t new_len = data->len + size*nmemb;
@@ -41,6 +43,7 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, CURLdata *data)
   return size*nmemb;
 }
 
+/* removes chars from beginning of string. */
 void delchar(char *str, int num_delete)
 {
     int len = strlen(str) - num_delete;
@@ -50,6 +53,7 @@ void delchar(char *str, int num_delete)
     }
 }
 
+/* construct necessary URL for API GET quote request. */
 void buildURL(URL *base_url, char *symbol, char *API, int API_len) {
     strncat(*base_url, "quote?symbol=", 14);
     strncat(*base_url, symbol, 10);
@@ -57,6 +61,7 @@ void buildURL(URL *base_url, char *symbol, char *API, int API_len) {
     strncat(*base_url, API, API_len);
 }
 
+/* use CURL library to get quote data and save in CURLdata struct */
 void getQuote(CURL *curl, CURLcode res, URL *url, CURLdata *data) {
     curl_easy_setopt(curl, CURLOPT_URL, *url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
@@ -64,6 +69,8 @@ void getQuote(CURL *curl, CURLcode res, URL *url, CURLdata *data) {
     res = curl_easy_perform(curl);
 }
 
+/* API returns JSON formatted data. parseQuote splits on commas and
+   deletes the leading chars to get just the price for each field */
 void parseQuote(QUOTE *quote, CURLdata *data) {
     quote->curr = strtok(data->ptr, ",");
     quote->high = strtok(NULL, ",");
@@ -72,7 +79,15 @@ void parseQuote(QUOTE *quote, CURLdata *data) {
     delchar(quote->curr, 5);
     delchar(quote->high, 4);
     delchar(quote->low, 4);
+}
 
+void printQuote(char *symbol, QUOTE *quote) {
+    printf("-------------\n");
+    printf("Quote for %s\n", symbol);
+    printf("Current price:\t$%s\n", quote->curr);
+    printf("Daily High:\t$%s\n", quote->high);
+    printf("Daily Low:\t$%s\n", quote->low);
+    printf("-------------\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -82,16 +97,20 @@ int main(int argc, char *argv[]) {
     QUOTE quote;
     URL base_url = "https://finnhub.io/api/v1/";
     char *API = getenv("FINNHUB_API_KEY");
-    int API_len = strlen(API);
+    size_t API_len = strlen(API);
     char *symbol = argv[1];
 
+    /* check if user entered everything properly */
     if (argc < 2) {
         fprintf(stderr, "I need a stock symbol\n");
         return EXIT_FAILURE;
     } else if (!API) {
         fprintf(stderr, "Set your FINNHUB_API_KEY env var");
         return EXIT_FAILURE;
-    } else if (!curl) {
+    } 
+    
+    /* make sure curl initializes properly */
+    if (!curl) {
         fprintf(stderr, "init failed\n");
         return EXIT_FAILURE;
     }
@@ -101,13 +120,7 @@ int main(int argc, char *argv[]) {
     buildURL(&base_url, symbol, API, API_len);
     getQuote(curl, res, &base_url, &data);
     parseQuote(&quote, &data);
-
-    printf("-------------\n");
-    printf("Quote for %s\n", symbol);
-    printf("Current price:\t$%s\n", quote.curr);
-    printf("Daily High:\t$%s\n", quote.high);
-    printf("Daily Low:\t$%s\n", quote.low);
-    printf("-------------\n");
+    printQuote(symbol, &quote);
 
     free(data.ptr);
 
