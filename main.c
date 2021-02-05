@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <stdbool.h>
 #include "curl/curl.h"
 
 #define RED     "\x1b[31m"
@@ -12,6 +14,9 @@
 #define RESET   "\x1b[0m"
 #define BWHT    "\e[1;37m"
 #define CLEAR   "\e[1;1H\e[2J"
+
+#define BASEURL     "https://finnhub.io/api/v1/"
+#define BASEURL_LEN 27
 
 
 typedef struct {
@@ -28,14 +33,19 @@ typedef struct {
 typedef char URL[256];
 
 /* initialize the struct needed to receive the GET request */
-void init_CURLdata(CURLdata *s) {
-  s->len = 0;
-  s->ptr = malloc(s->len+1);
-  if (s->ptr == NULL) {
+void init_CURLdata(CURLdata *data) {
+  data->len = 0;
+  data->ptr = malloc(data->len+1);
+  if (data->ptr == NULL) {
     fprintf(stderr, "malloc() failed\n");
     exit(EXIT_FAILURE);
   }
-  s->ptr[0] = '\0';
+  data->ptr[0] = '\0';
+}
+
+void reset_CURLdata(CURLdata *data) {
+    data->len = 0;
+    data->ptr[0] = '\0';
 }
 
 /* CURL provides format for write functions in their documentation */
@@ -92,9 +102,18 @@ void parseQuote(QUOTE *quote, CURLdata *data) {
     delchar(quote->low, 4);
 }
 
+void resetQuote(QUOTE *quote) {
+    quote->curr[0] = '\0';
+    quote->high[0] = '\0';
+    quote->low[0] = '\0';
+}
+
 void printQuote(char *symbol, QUOTE *quote) {
-    printf(CLEAR);
-    printf("Quote for ");
+    static bool init = true;
+    if (init) {
+        printf(CLEAR);
+        init = false;
+    }
     printf(BWHT "%s\n" RESET, symbol);
     printf("Current price:\t");
     printf(GREEN "$%s\n" RESET, quote->curr);
@@ -104,15 +123,21 @@ void printQuote(char *symbol, QUOTE *quote) {
     printf(RED "$%s\n\n" RESET, quote->low);
 }
 
+void resetURL(URL *url) {
+    memcpy(url, BASEURL, BASEURL_LEN);
+}
+
+
 int main(int argc, char *argv[]) {
     CURL *curl = curl_easy_init();
     CURLcode res;
     CURLdata data;
     QUOTE quote;
-    URL base_url = "https://finnhub.io/api/v1/";
+    URL base_url = BASEURL;
     char *API = getenv("FINNHUB_API_KEY");
     size_t API_len = strlen(API);
-    char *symbol = argv[1];
+    char *symbol;
+    bool cont = false;
 
     /* check if user entered everything properly */
     if (argc < 2) {
@@ -130,11 +155,24 @@ int main(int argc, char *argv[]) {
     }
 
     init_CURLdata(&data);
+    
+    if (strcmp(argv[1], "-c") == 0) {
+        symbol = argv[2];
+        cont = true;
+    } else {
+        symbol = argv[1];
+    }
 
-    buildURL(&base_url, symbol, API, API_len);
-    getQuote(curl, res, &base_url, &data);
-    parseQuote(&quote, &data);
-    printQuote(symbol, &quote);
+    do {
+        buildURL(&base_url, symbol, API, API_len);
+        getQuote(curl, res, &base_url, &data);
+        parseQuote(&quote, &data);
+        printQuote(symbol, &quote);
+        resetURL(&base_url);
+        reset_CURLdata(&data);
+        resetQuote(&quote);
+        sleep(5);
+    } while (cont);
 
     free(data.ptr);
 
