@@ -44,11 +44,6 @@ void init_CURLdata(CURLdata *data) {
   data->ptr[0] = '\0';
 }
 
-void reset_CURLdata(CURLdata *data) {
-    data->len = 0;
-    data->ptr[0] = '\0';
-}
-
 /* CURL provides format for write functions in their documentation */
 size_t writefunc(void *ptr, size_t size, size_t nmemb, CURLdata *data)
 {
@@ -105,12 +100,6 @@ void parseQuote(QUOTE *quote, CURLdata *data) {
     delchar(quote->open, 4);
 }
 
-void resetQuote(QUOTE *quote) {
-    quote->curr[0] = '\0';
-    quote->high[0] = '\0';
-    quote->low[0] = '\0';
-}
-
 void printQuote(char *symbol, QUOTE *quote) {
     static bool init = true;
     static char prev[256] = "0";
@@ -124,9 +113,9 @@ void printQuote(char *symbol, QUOTE *quote) {
     printf(BWHT "%s\n" RESET, symbol);
     printf("Current price:\t");
     if (diff < 0.0) {
-        printf(RED "$%s %.2f (%.2f)\n" RESET, quote->curr, diff, percent);
+        printf(RED "$%s %.2f (%.2f%%)\n" RESET, quote->curr, diff, percent);
     } else {
-        printf(GREEN "$%s +%.2f (+%.2f)\n" RESET, quote->curr, diff, percent);
+        printf(GREEN "$%s +%.2f (+%.2f%%)\n" RESET, quote->curr, diff, percent);
     }
     printf("Opened At:\t");
     printf(CYAN "$%s\n" RESET, quote->open);
@@ -137,10 +126,6 @@ void printQuote(char *symbol, QUOTE *quote) {
 
     memcpy(prev, quote->curr, curr_len);
     
-}
-
-void resetURL(URL *url) {
-    memcpy(url, BASEURL, BASEURL_LEN);
 }
 
 void getQuote(CURL *curl, char *symbol, char *API_KEY, size_t API_LEN) {
