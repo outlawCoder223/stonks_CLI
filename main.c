@@ -83,7 +83,7 @@ void buildURL(URL *base_url, char *symbol, char *API, int API_len) {
 }
 
 /* use CURL library to get quote data and save in CURLdata struct */
-void getQuote(CURL *curl, CURLcode res, URL *url, CURLdata *data) {
+void getQuoteData(CURL *curl, CURLcode res, URL *url, CURLdata *data) {
     curl_easy_setopt(curl, CURLOPT_URL, *url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, data);
@@ -127,6 +127,19 @@ void resetURL(URL *url) {
     memcpy(url, BASEURL, BASEURL_LEN);
 }
 
+void getQuote(CURL *curl, char *symbol, char *API_KEY, size_t API_LEN) {
+    CURLcode res;
+    CURLdata data;
+    QUOTE quote;
+    URL base_url = BASEURL;
+
+    init_CURLdata(&data);
+    buildURL(&base_url, symbol, API_KEY, API_LEN);
+    getQuoteData(curl, res, &base_url, &data);
+    parseQuote(&quote, &data);
+    printQuote(symbol, &quote);
+    free(data.ptr);
+}
 
 int main(int argc, char *argv[]) {
     CURL *curl = curl_easy_init();
@@ -134,8 +147,8 @@ int main(int argc, char *argv[]) {
     CURLdata data;
     QUOTE quote;
     URL base_url = BASEURL;
-    char *API = getenv("FINNHUB_API_KEY");
-    size_t API_len = strlen(API);
+    char *API_KEY = getenv("FINNHUB_API_KEY");
+    size_t API_LEN = strlen(API_KEY);
     char *symbol;
     bool cont = false;
 
@@ -143,7 +156,7 @@ int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "I need a stock symbol\n");
         return EXIT_FAILURE;
-    } else if (!API) {
+    } else if (!API_KEY) {
         fprintf(stderr, "Set your FINNHUB_API_KEY env var");
         return EXIT_FAILURE;
     } 
@@ -159,20 +172,14 @@ int main(int argc, char *argv[]) {
     if (strcmp(argv[1], "-c") == 0) {
         symbol = argv[2];
         cont = true;
+        while (cont) {
+            getQuote(curl, symbol, API_KEY, API_LEN);
+            sleep(5);
+        }
     } else {
         symbol = argv[1];
+        getQuote(curl, symbol, API_KEY, API_LEN);
     }
-
-    do {
-        buildURL(&base_url, symbol, API, API_len);
-        getQuote(curl, res, &base_url, &data);
-        parseQuote(&quote, &data);
-        printQuote(symbol, &quote);
-        resetURL(&base_url);
-        reset_CURLdata(&data);
-        resetQuote(&quote);
-        sleep(5);
-    } while (cont);
 
     free(data.ptr);
 
