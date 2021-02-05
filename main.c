@@ -17,6 +17,7 @@
 
 #define BASEURL     "https://finnhub.io/api/v1/"
 #define BASEURL_LEN 27
+#define MAX_TICKERS 5
 
 
 typedef struct {
@@ -100,8 +101,8 @@ void parseQuote(QUOTE *quote, CURLdata *data) {
     delchar(quote->open, 4);
 }
 
-void printQuote(char *symbol, QUOTE *quote) {
-    static bool init = true;
+void printQuote(char *symbol, QUOTE *quote, bool init) {
+    
     static char prev[256] = "0";
     size_t curr_len = strlen(quote->curr);
     float open_f = atof(quote->open);
@@ -109,7 +110,9 @@ void printQuote(char *symbol, QUOTE *quote) {
     float diff = curr_f - open_f;
     float percent = (diff / open_f) * 100;
 
-    printf(CLEAR);
+    if (init) {
+        printf(CLEAR);
+    }
     printf(BWHT "%s\n" RESET, symbol);
     printf("Current price:\t");
     if (diff < 0.0) {
@@ -122,13 +125,13 @@ void printQuote(char *symbol, QUOTE *quote) {
     printf("Daily High:\t");
     printf(YELLOW "$%s\n" RESET, quote->high);
     printf("Daily Low:\t");
-    printf(RED "$%s\n" RESET, quote->low);
+    printf(RED "$%s\n\n" RESET, quote->low);
 
     memcpy(prev, quote->curr, curr_len);
     
 }
 
-void getQuote(CURL *curl, char *symbol, char *API_KEY, size_t API_LEN) {
+void getQuote(CURL *curl, char *symbol, char *API_KEY, size_t API_LEN, bool init) {
     CURLcode res;
     CURLdata data;
     QUOTE quote;
@@ -138,20 +141,17 @@ void getQuote(CURL *curl, char *symbol, char *API_KEY, size_t API_LEN) {
     buildURL(&base_url, symbol, API_KEY, API_LEN);
     getQuoteData(curl, res, &base_url, &data);
     parseQuote(&quote, &data);
-    printQuote(symbol, &quote);
+    printQuote(symbol, &quote, init);
+    
     free(data.ptr);
 }
 
 int main(int argc, char *argv[]) {
     CURL *curl = curl_easy_init();
-    CURLcode res;
-    CURLdata data;
-    QUOTE quote;
-    URL base_url = BASEURL;
     char *API_KEY = getenv("FINNHUB_API_KEY");
     size_t API_LEN = strlen(API_KEY);
-    char *symbol;
-    bool cont = false;
+    char *symbol[MAX_TICKERS];
+    int i, loop_max;
 
     /* check if user entered everything properly */
     if (argc < 2) {
@@ -167,17 +167,28 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "init failed\n");
         return EXIT_FAILURE;
     }
-    
+
+    /* read in ticker symbols and get the quotes */
     if (strcmp(argv[1], "-p") == 0) {
-        symbol = argv[2];
-        cont = true;
-        while (cont) {
-            getQuote(curl, symbol, API_KEY, API_LEN);
+        loop_max = (argc - 2) < MAX_TICKERS ? argc - 2 : MAX_TICKERS;
+        
+        for (i = 0; i < loop_max; i++) {
+            symbol[i] = argv[i+2];
+        }
+
+        while (1) {
+            for (i = 0; i < loop_max; i++) {
+                getQuote(curl, symbol[i], API_KEY, API_LEN, i == 0);
+            }
             sleep(10);
         }
     } else {
-        symbol = argv[1];
-        getQuote(curl, symbol, API_KEY, API_LEN);
+        loop_max = (argc - 1) < MAX_TICKERS ? argc - 1 : MAX_TICKERS;
+
+        for (i = 0; i < loop_max; i++) {
+            symbol[i] = argv[i+1];
+            getQuote(curl, symbol[i], API_KEY, API_LEN, i== 0);
+        }
     }
 
     curl_easy_cleanup(curl);
