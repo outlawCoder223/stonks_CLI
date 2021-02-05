@@ -3,6 +3,17 @@
 #include <string.h>
 #include "curl/curl.h"
 
+#define RED     "\x1b[31m"
+#define GREEN   "\x1b[32m"
+#define YELLOW  "\x1b[33m"
+#define BLUE    "\x1b[34m"
+#define MAGENTA "\x1b[35m"
+#define CYAN    "\x1b[36m"
+#define RESET   "\x1b[0m"
+#define BWHT    "\e[1;37m"
+#define CLEAR   "\e[1;1H\e[2J"
+
+
 typedef struct {
   char *ptr;
   size_t len;
@@ -82,12 +93,15 @@ void parseQuote(QUOTE *quote, CURLdata *data) {
 }
 
 void printQuote(char *symbol, QUOTE *quote) {
-    printf("-------------\n");
-    printf("Quote for %s\n", symbol);
-    printf("Current price:\t$%s\n", quote->curr);
-    printf("Daily High:\t$%s\n", quote->high);
-    printf("Daily Low:\t$%s\n", quote->low);
-    printf("-------------\n");
+    printf(CLEAR);
+    printf("Quote for ");
+    printf(BWHT "%s\n" RESET, symbol);
+    printf("Current price:\t");
+    printf(GREEN "$%s\n" RESET, quote->curr);
+    printf("Daily High:\t");
+    printf(YELLOW "$%s\n" RESET, quote->high);
+    printf("Daily Low:\t");
+    printf(RED "$%s\n\n" RESET, quote->low);
 }
 
 int main(int argc, char *argv[]) {
