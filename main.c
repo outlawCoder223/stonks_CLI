@@ -28,6 +28,7 @@ typedef struct {
     char *curr;
     char *high;
     char *low;
+    char *open;
 } QUOTE;
 
 typedef char URL[256];
@@ -96,10 +97,12 @@ void parseQuote(QUOTE *quote, CURLdata *data) {
     quote->curr = strtok(data->ptr, ",");
     quote->high = strtok(NULL, ",");
     quote->low = strtok(NULL, ",");
+    quote->open = strtok(NULL, ",");
 
     delchar(quote->curr, 5);
     delchar(quote->high, 4);
     delchar(quote->low, 4);
+    delchar(quote->open, 4);
 }
 
 void resetQuote(QUOTE *quote) {
@@ -110,17 +113,29 @@ void resetQuote(QUOTE *quote) {
 
 void printQuote(char *symbol, QUOTE *quote) {
     static bool init = true;
-    if (init) {
-        printf(CLEAR);
-        init = false;
-    }
+    static char prev[256] = "0";
+    size_t curr_len = strlen(quote->curr);
+    float open_f = atof(quote->open);
+    float curr_f = atof(quote->curr);
+    float diff = curr_f - open_f;
+
+    printf(CLEAR);
     printf(BWHT "%s\n" RESET, symbol);
     printf("Current price:\t");
-    printf(GREEN "$%s\n" RESET, quote->curr);
+    if (diff < 0.0) {
+        printf(RED "$%s %.2f\n" RESET, quote->curr, diff);
+    } else {
+        printf(GREEN "$%s +%.2f\n" RESET, quote->curr, diff);
+    }
+    printf("Opened At:\t");
+    printf(CYAN "$%s\n" RESET, quote->open);
     printf("Daily High:\t");
     printf(YELLOW "$%s\n" RESET, quote->high);
     printf("Daily Low:\t");
-    printf(RED "$%s\n\n" RESET, quote->low);
+    printf(RED "$%s\n" RESET, quote->low);
+
+    memcpy(prev, quote->curr, curr_len);
+    
 }
 
 void resetURL(URL *url) {
@@ -166,22 +181,18 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "init failed\n");
         return EXIT_FAILURE;
     }
-
-    init_CURLdata(&data);
     
-    if (strcmp(argv[1], "-c") == 0) {
+    if (strcmp(argv[1], "-p") == 0) {
         symbol = argv[2];
         cont = true;
         while (cont) {
             getQuote(curl, symbol, API_KEY, API_LEN);
-            sleep(5);
+            sleep(10);
         }
     } else {
         symbol = argv[1];
         getQuote(curl, symbol, API_KEY, API_LEN);
     }
-
-    free(data.ptr);
 
     curl_easy_cleanup(curl);
 
