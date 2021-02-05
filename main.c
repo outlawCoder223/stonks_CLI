@@ -118,14 +118,15 @@ void printQuote(char *symbol, QUOTE *quote) {
     float open_f = atof(quote->open);
     float curr_f = atof(quote->curr);
     float diff = curr_f - open_f;
+    float percent = (diff / open_f) * 100;
 
     printf(CLEAR);
     printf(BWHT "%s\n" RESET, symbol);
     printf("Current price:\t");
     if (diff < 0.0) {
-        printf(RED "$%s %.2f\n" RESET, quote->curr, diff);
+        printf(RED "$%s %.2f (%.2f)\n" RESET, quote->curr, diff, percent);
     } else {
-        printf(GREEN "$%s +%.2f\n" RESET, quote->curr, diff);
+        printf(GREEN "$%s +%.2f (+%.2f)\n" RESET, quote->curr, diff, percent);
     }
     printf("Opened At:\t");
     printf(CYAN "$%s\n" RESET, quote->open);
