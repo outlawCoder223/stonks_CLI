@@ -21,6 +21,7 @@
 #define MAX_TICKERS    5
 #define POLL_OFFSET    2
 #define NONPOLL_OFFSET 1
+#define SLEEP_TIME      10
  
 typedef struct {
   char *ptr;
@@ -128,14 +129,14 @@ void parseQuote(quote_res *quote, string *data) {
 }
 
 /* print the parsed quote data nicely to console */
-void printQuote(quote_t *quote) {
-    static bool init = true;
+void printQuote(quote_t *quote, bool clear) {
+    // static bool init = true;
     float diff = quote->q_data.curr - quote->q_data.open;
     float percent = (diff / quote->q_data.open) * 100;
 
-    if (init) {
+    if (clear) {
         printf(CLEAR);
-        init = false;
+        // init = false;
     }
     printf(BWHT "%s\n" RESET, quote->symbol);
     printf("Current price:\t");
@@ -173,9 +174,7 @@ int main(int argc, char **argv) {
     quote_t quotes[argc - 1];
     char *API_KEY = getenv("FINNHUB_API_KEY");
     int API_LEN = strlen(API_KEY);
-    char *symbols[argc - 1];
     int i, offset, loop_max, error_create, error_join;
-    CURLSH *share;
     bool poll_en = false;
 
     curl_global_init(CURL_GLOBAL_ALL);
@@ -189,6 +188,8 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     } 
 
+    /* if in polling mode, offset for extra arg and only take MAX_TICKERS
+       amount of tickers to avoid API lockout */
     if (strcmp(argv[1], "-p") == 0) {
         loop_max = (argc - 2) < MAX_TICKERS ? argc - 2 : MAX_TICKERS;
         offset = POLL_OFFSET;
@@ -198,11 +199,12 @@ int main(int argc, char **argv) {
         offset = NONPOLL_OFFSET;
     }
 
-    printf("Requesting quote data...\n");
-    
+
     do {
+        printf("Requesting quote data...\n");
+        
+        /* create threads */
         for (i = 0; i < loop_max; i++) {
-            symbols[i] = argv[i+offset];
             quotes[i].symbol = argv[i+offset];
             quotes[i].api_key = API_KEY;
             quotes[i].api_len = API_LEN;
@@ -217,6 +219,7 @@ int main(int argc, char **argv) {
             
         }
 
+        /* join threads */
         for (i = 0; i < loop_max; i++) {
             error_join = pthread_join(tid[i], NULL);
             
@@ -225,12 +228,14 @@ int main(int argc, char **argv) {
             }
         }
 
+        /* print quote data */
         for (i = 0; i < loop_max; i++) {
-            printQuote(&quotes[i]);
+            printQuote(&quotes[i], i == 0);
         }
 
+        /* if polling enabled wait SLEEP_TIME seconds to avoid API lockout */
         if (poll_en)
-            sleep(10);
+            sleep(SLEEP_TIME);
 
     } while(poll_en);
 
