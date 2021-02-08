@@ -179,6 +179,7 @@ void printQuote(quote_t *quote) {
 
     if (init) {
         printf(CLEAR);
+        init = false;
     }
     printf(BWHT "%s\n" RESET, quote->symbol);
     printf("Current price:\t");
@@ -207,7 +208,7 @@ void getQuote(quote_t *quote) {
     buildURL(quote);
     getQuoteData(&quote->url, &data);
     parseQuote(&quote->q_data, &data);
-    printQuote(quote);
+    // printQuote(quote);
     
     free(data.ptr);
 }
@@ -245,7 +246,7 @@ static void kill_locks(int max) {
 
 int main(int argc, char **argv) {
     pthread_t tid[MAX_TICKERS];
-    quote_t quote[argc - 1];
+    quote_t quotes[argc - 1];
     // CURL *curl = curl_easy_init();
     char *API_KEY = getenv("FINNHUB_API_KEY");
     int API_LEN = strlen(API_KEY);
@@ -311,15 +312,15 @@ int main(int argc, char **argv) {
 
         for (i = 0; i < loop_max; i++) {
             symbols[i] = argv[i+1];
-            quote[i].symbol = argv[i+1];
-            quote[i].api_key = API_KEY;
-            quote[i].api_len = API_LEN;
-            quote[i].quote_num = i;
-            // init_quote_res(&quote[i].q_data);
+            quotes[i].symbol = argv[i+1];
+            quotes[i].api_key = API_KEY;
+            quotes[i].api_len = API_LEN;
+            quotes[i].quote_num = i;
+            // init_quote_res(&quotes[i].q_data);
             int error = pthread_create(&tid[i],
                                        NULL,
                                        pull_one_url,
-                                       (void *)&quote[i]);
+                                       (void *)&quotes[i]);
 
             if (0 != error)
                 fprintf(stderr, "Couldn't run thread number %d\n", i);
@@ -332,6 +333,10 @@ int main(int argc, char **argv) {
         for (i = 0; i < loop_max; i++) {
             pthread_join(tid[i], NULL);
             fprintf(stderr, "Thread %d terminated\n", i);
+        }
+
+        for (i = 0; i < loop_max; i++) {
+            printQuote(&quotes[i]);
         }
 
         kill_locks(loop_max);
