@@ -25,7 +25,8 @@ With all the recent buzz on the stock market, I was getting tired of constantly 
 
 ## Dependancies
 
-- CURL C library
+- libCURL C library
+- pthreads C library
 - C compiler (set in *Makefile*)
 - [Finnhub](https://finnhub.io/) API key (free for developers)
 
