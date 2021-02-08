@@ -16,9 +16,11 @@
 #define BWHT    "\e[1;37m"
 #define CLEAR   "\e[1;1H\e[2J"
 
-#define BASEURL     "https://finnhub.io/api/v1/"
-#define BASEURL_LEN 27
-#define MAX_TICKERS 5
+#define BASEURL        "https://finnhub.io/api/v1/"
+#define BASEURL_LEN    27
+#define MAX_TICKERS    5
+#define POLL_OFFSET    2
+#define NONPOLL_OFFSET 1
 
 typedef struct {
   char *ptr;
@@ -57,33 +59,6 @@ void init_CURLdata(CURLdata *data) {
   data->ptr[0] = '\0';
 }
 
-// void init_quote_res(quote_res *quote_data) {
-//     quote_data->curr = (char *)malloc(sizeof(char) * 1);
-//     if (quote_data->curr == NULL) {
-//         fprintf(stderr, "malloc() failed\n");
-//         exit(EXIT_FAILURE);
-//     }
-//     quote_data->high = (char *)malloc(sizeof(char) * 1);
-//     if (quote_data->high == NULL) {
-//         fprintf(stderr, "malloc() failed\n");
-//         exit(EXIT_FAILURE);
-//     }
-//     quote_data->low = (char *)malloc(sizeof(char) * 1);
-//     if (quote_data->low == NULL) {
-//         fprintf(stderr, "malloc() failed\n");
-//         exit(EXIT_FAILURE);
-//     }
-//     quote_data->open = (char *)malloc(sizeof(char) * 1);
-//     if (quote_data->open == NULL) {
-//         fprintf(stderr, "malloc() failed\n");
-//         exit(EXIT_FAILURE);
-//     }
-//     quote_data->curr[0] = '\0';
-//     quote_data->open[0] = '\0';
-//     quote_data->low[0] = '\0';
-//     quote_data->open[0] = '\0';
-// }
-
 /* CURL provides format for write functions in their documentation */
 size_t writefunc(void *ptr, size_t size, size_t nmemb, CURLdata *data)
 {
@@ -112,12 +87,10 @@ void delchar(char *str, int num_delete) {
 /* construct necessary URL for API GET quote request. */
 void buildURL(quote_t *quote) {
 
-    printf("build URL\n");
     strncat(quote->url, "quote?symbol=", 14);
     strncat(quote->url, quote->symbol, 10);
     strncat(quote->url, "&token=", 8);
     strncat(quote->url, quote->api_key, quote->api_len);
-    printf("%s\n", quote->url);
 }
 
 /* use CURL library to get quote data and save in CURLdata struct */
@@ -126,13 +99,9 @@ void getQuoteData(URL *url, CURLdata *data) {
     CURLcode res;
 
     curl_easy_setopt(curl, CURLOPT_URL, *url);
-    printf("1\n");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
-    printf("2\n");
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, data);
-    printf("3\n");
     res = curl_easy_perform(curl);
-    printf("get quote data\n");
 
     curl_easy_cleanup(curl);
 }
@@ -141,8 +110,7 @@ void getQuoteData(URL *url, CURLdata *data) {
    deletes the leading chars to get just the price for each field */
 void parseQuote(quote_res *quote, CURLdata *data) {
     char *curr, *high, *low, *open;
-    printf("parse quote\n");
-    printf("%s\n", data->ptr);
+
     curr = strtok(data->ptr, ",");
     high = strtok(NULL, ",");
     low = strtok(NULL, ",");
@@ -152,10 +120,6 @@ void parseQuote(quote_res *quote, CURLdata *data) {
     delchar(high, 4);
     delchar(low, 4);
     delchar(open, 4);
-    printf("%s\n", curr);
-    printf("%s\n", high);
-    printf("%s\n", low);
-    printf("%s\n", open);
 
     // memcpy(quote->curr, curr, strlen(curr));
     // memcpy(quote->high, high, strlen(high));
@@ -203,7 +167,6 @@ void getQuote(quote_t *quote) {
     CURLdata data;
     memcpy(quote->url, BASEURL, BASEURL_LEN);
 
-    printf("get quote\n");
     init_CURLdata(&data);
     buildURL(quote);
     getQuoteData(&quote->url, &data);
@@ -251,8 +214,9 @@ int main(int argc, char **argv) {
     char *API_KEY = getenv("FINNHUB_API_KEY");
     int API_LEN = strlen(API_KEY);
     char *symbols[argc - 1];
-    int i, loop_max, error;
+    int i, offset, loop_max, error;
     CURLSH *share;
+    bool poll_en = false;
 
     // URL_params tparams;
 
@@ -287,10 +251,7 @@ int main(int argc, char **argv) {
     // if (strcmp(argv[1], "-p") == 0) {
     //     loop_max = (argc - 2) < MAX_TICKERS ? argc - 2 : MAX_TICKERS;
         
-    //     for (i = 0; i < loop_max; i++) {
-    //         symbol[i] = argv[i+2];
-    //     }
-
+        
     //     while (1) {
     //         for (i = 0; i < loop_max; i++) {
     //             getQuote(curl, symbol[i], API_KEY, API_LEN, i == 0);
@@ -306,44 +267,56 @@ int main(int argc, char **argv) {
     //     }
     // }
 
-    loop_max = (argc - 1) < MAX_TICKERS ? argc - 1 : MAX_TICKERS;
+    if (strcmp(argv[1], "-p") == 0) {
+        loop_max = (argc - 2) < MAX_TICKERS ? argc - 2 : MAX_TICKERS;
+        offset = POLL_OFFSET;
+        // for (i = 0; i < loop_max; i++) {
+        //     symbols[i] = argv[i+j];
+        // }
+        poll_en = true;
+    } else {
+        loop_max = (argc - 1) < MAX_TICKERS ? argc - 1 : MAX_TICKERS;
+        offset = NONPOLL_OFFSET;
+    }
 
+    printf("Requesting quote data...\n");
     init_locks(loop_max);
-
+    do {
         for (i = 0; i < loop_max; i++) {
-            symbols[i] = argv[i+1];
-            quotes[i].symbol = argv[i+1];
+            symbols[i] = argv[i+offset];
+            quotes[i].symbol = argv[i+offset];
             quotes[i].api_key = API_KEY;
             quotes[i].api_len = API_LEN;
             quotes[i].quote_num = i;
             // init_quote_res(&quotes[i].q_data);
             int error = pthread_create(&tid[i],
-                                       NULL,
-                                       pull_one_url,
-                                       (void *)&quotes[i]);
+                                        NULL,
+                                        pull_one_url,
+                                        (void *)&quotes[i]);
 
             if (0 != error)
-                fprintf(stderr, "Couldn't run thread number %d\n", i);
-            else 
-                fprintf(stderr, "Thread %d, gets %s\n", i, symbols[i]);
+                fprintf(stderr, "Couldn't run quote %s\n", quotes[i].symbol);
+            
         }
-
-        printf("after threads\n");
 
         for (i = 0; i < loop_max; i++) {
             pthread_join(tid[i], NULL);
-            fprintf(stderr, "Thread %d terminated\n", i);
+            // fprintf(stderr, "Thread %d terminated\n", i);
         }
 
         for (i = 0; i < loop_max; i++) {
             printQuote(&quotes[i]);
         }
+        if (poll_en)
+            sleep(10);
+    } while(poll_en);
 
-        kill_locks(loop_max);
 
-        curl_share_cleanup(share);
+    kill_locks(loop_max);
 
-        curl_global_cleanup();
+    curl_share_cleanup(share);
+
+    curl_global_cleanup();
 
     // curl_easy_cleanup(curl);
 
