@@ -21,7 +21,7 @@
 #define MAX_TICKERS    5
 #define POLL_OFFSET    2
 #define NONPOLL_OFFSET 1
-#define SLEEP_TIME      10
+#define SLEEP_TIME     10
  
 typedef struct {
   char *ptr;
