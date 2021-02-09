@@ -2,7 +2,7 @@
 
 ## Description
 
-With all the recent buzz on the stock market, I was getting tired of constantly checking specific stocks online. This inspired me to create this little commandline tool to get stock quotes instantly. All you need is an API key to the [Finnhub](https://finnhub.io/) financial API and you are on your way! I set the executable in the `PATH` environment variable so that wherever I am I can type `stonks <ticker>` and get a real time quote for where the price is at. By default the program can take up to 5 stock tickers. This is to avoid too many API requests. This has only been tested on Linux, but should work on Mac. Feel free to take this and make it your own!
+With all the recent buzz on the stock market, I was getting tired of constantly checking specific stocks online. This inspired me to create this little commandline tool to get stock quotes instantly. All you need is an API key to the [Finnhub](https://finnhub.io/) financial API and you are on your way! By default the program can take up to 5 stock tickers. This is to avoid too many API requests. This has only been tested on Linux, but should work on Mac. Feel free to take this and make it your own!
 
 ![](./stonks_CLI.gif)
 
@@ -10,14 +10,14 @@ With all the recent buzz on the stock market, I was getting tired of constantly 
 
 - Clone repo
 
-- Navigate to base directory
+- Set path to `/bin` in *MAKEFILE*
 
-- Run `make`
+- Run `make install`
 
 
 ## Usage
 
-- Set `FINNHUB_API_KEY` environment variable to your Finnhub API key
+- Set a `FINNHUB_API_KEY` environment variable to your Finnhub API key
 
 - Run `stonks <ticker>` where the ticker is any valid stock ticker symbol.
 
