@@ -10,7 +10,9 @@ With all the recent buzz on the stock market, I was getting tired of constantly 
 
 - Clone repo
 
-- Set path to `/bin` in *MAKEFILE*
+- `cd/stonks_CLI`
+
+- Make sure the `BINPATH` variable is the path to your `/bin` directory in the *MAKEFILE*
 
 - Run `make install`
 
