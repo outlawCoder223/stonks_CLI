@@ -12,11 +12,13 @@ With all the recent buzz on the stock market, I was getting tired of constantly 
 
 - `cd/stonks_CLI`
 
-- Make sure the `CC` variable is your C compiler (*gcc* by default)
+- Make sure the `CC` variable in *Makefile* is your C compiler (*gcc* by default)
 
-- Make sure the `BINPATH` variable is the path to your `/bin` directory in the *Makefile*
+- Make sure the `BINPATH` variable in *Makefile* is the path to your `/bin` directory
 
 - Run `make install`
+
+- If you don't want to install in `/bin`, run `make` to build in local directory
 
 
 ## Usage
