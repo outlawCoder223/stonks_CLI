@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include "curl/curl.h"
+#include <curl/curl.h>
 
 #define RED     "\x1b[31m"
 #define GREEN   "\x1b[32m"

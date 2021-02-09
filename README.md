@@ -34,6 +34,10 @@ With all the recent buzz on the stock market, I was getting tired of constantly 
 - C compiler (set in *Makefile*)
 - [Finnhub](https://finnhub.io/) API key (free for developers)
 
+## Troubleshooting
+
+- Sometimes the compiler can't find the libcurl headers. If this is the case for you (as it was for me), following the instructions on the [CURL](https://curl.se/libcurl/c/libcurl-tutorial.html) website should tell you how to fix this. Depending on your system this might require you having to update the `#include` for `curl.h`.
+
 ## License
 
 Copyright 2021 Rance Campbell
