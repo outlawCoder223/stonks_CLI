@@ -12,7 +12,9 @@ With all the recent buzz on the stock market, I was getting tired of constantly 
 
 - `cd/stonks_CLI`
 
-- Make sure the `BINPATH` variable is the path to your `/bin` directory in the *MAKEFILE*
+- Make sure the `CC` variable is your C compiler (*gcc* by default)
+
+- Make sure the `BINPATH` variable is the path to your `/bin` directory in the *Makefile*
 
 - Run `make install`
 
