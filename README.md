@@ -2,7 +2,7 @@
 
 ## Description
 
-With all the recent buzz on the stock market, I was getting tired of constantly checking specific stocks online. This inspired me to create this little commandline tool to get stock quotes instantly. All you need is an API key to the [Finnhub](https://finnhub.io/) financial API and you are on your way! By default the program can take up to 5 stock tickers. This is to avoid too many API requests. This has only been tested on Linux, but should work on Mac. Feel free to take this and make it your own!
+With all the recent buzz on the stock market, I was getting tired of constantly checking specific stocks online. This inspired me to create this little commandline tool to get stock quotes instantly. All you need is an API key to the [Finnhub](https://finnhub.io/) financial API and you are on your way! By default the program can take up to 5 stock tickers. This is to avoid too many API requests. This has only been tested on Linux, but should work on any Linux/Unix machine with minimal tweaking. Feel free to take this and make it your own!
 
 ![](./stonks_CLI.gif)
 
