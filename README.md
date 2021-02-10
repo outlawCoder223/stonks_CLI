@@ -23,11 +23,11 @@ With all the recent buzz on the stock market, I was getting tired of constantly 
 
 ## Usage
 
-- Set a `FINNHUB_API_KEY` environment variable to your Finnhub API key
+- Set a `FINNHUB_API_KEY` environment variable to your Finnhub API key. Here's a [post](https://unix.stackexchange.com/questions/117467/how-to-permanently-set-environmental-variables) to explain how to do this if you forgot.
 
 - Run `stonks <ticker>` where the ticker is any valid stock ticker symbol.
 
-- Run `stonks -p <ticker>` to enabling polling mode. This will refresh the price every 10 seconds.
+- Use a `-p` flag to enable a refresh every 10 seconds: `stonks -p <ticker>`
 
 ## Dependancies
 
